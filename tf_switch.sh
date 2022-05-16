@@ -12,34 +12,32 @@ USAGE="Usage: tf_switch {version you'd like to use}: eg. 'tf_switch 0.14.11'\n O
 TF_VERSION="${1}"
 TF_PATH="$(command -v terraform | cut -d\/ -f1-4)"
 KERNEL=$(uname -s | tr "[:upper:]" "[:lower:]")
-#
+VERSION="0.0.10"
+
 if [ -z ${JQ} ] && [ ${TF_VERSION} = "latest" ]; then
   printf "jq is not installed or is not in your PATH.  Please rectify the error.\n"
-  exit 0 # Not an error to ask for help
+  exit 1
 fi
 
 if [ -z ${CURL} ]; then
   printf "curl is not installed or is not in your PATH.  Please rectify the error.\n"
-  exit 0 # Not an error to ask for help
+  exit 1
 fi
 #
 if [ -z ${TF_VERSION} ]; then
-  printf "${NO_TOOLS}"
+  printf "${USAGE}"
   exit 0 # Not an error to ask for help
 fi
 
 if [ "${TF_VERSION}" = "latest" ];
   then
     VERSION="$(curl -sL {$CHECK_URL} | jq -r .current_version)"
-#    VERSION="$(curl -LsS ${BASE_URL} \
-#      | grep -Eo '/[.0-9]+/' | grep -Eo '[.0-9]+' \
-#      | sort -V | tail -1 )" ;
 else
   VERSION="${TF_VERSION}"
 fi
 
 if [ -z ${TF_PATH} ]; then
-  echo "Terraform path not found!"
+  echo "Terraform not found in ${PATH} !"
   echo "Please enter FULL path to install terraform"
   read TF_PATH
 fi
