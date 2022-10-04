@@ -12,7 +12,8 @@ USAGE="Usage: tf_switch {version you'd like to use}: eg. 'tf_switch 0.14.11'\n O
 TF_VERSION="${1}"
 TF_PATH="$(command -v terraform | cut -d\/ -f1-4)"
 KERNEL=$(uname -s | tr "[:upper:]" "[:lower:]")
-VERSION="0.0.10"
+VERSION="0.0.11"
+TEMP_DIR=$(mktemp -d)
 
 if [ -z ${JQ} ] && [ ${TF_VERSION} = "latest" ]; then
   printf "jq is not installed or is not in your PATH.  Please rectify the error.\n"
@@ -46,10 +47,11 @@ TARGET_URL="${DOWNLOAD_URL}/${VERSION}/terraform_${VERSION}_${KERNEL}_amd64.zip"
 #
 echo "Downloading and switching to TF v${VERSION}"
 echo "Please wait"
-cd ${HOME}/tmp
+cd $TEMP_DIR
 curl -s "${TARGET_URL}" -o "terraform_${VERSION}_${KERNEL}_amd64.zip"
 unzip -o "terraform_${VERSION}_${KERNEL}_amd64.zip"
 mv terraform "${TF_PATH}"
 
 echo "You are now using"
 terraform version | head -2
+rm -rf $TEMP_DIR
