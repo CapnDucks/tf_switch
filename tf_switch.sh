@@ -4,57 +4,75 @@
 # Capnducks (coder@capnduck.com)
 # Tested on both mac and ubuntu
 #
-JQ="$(command -v jq)"
-CURL="$(command -v curl)"
+BASE_URL="https://releases.hashicorp.com/terraform"
 CHECK_URL="https://checkpoint-api.hashicorp.com/v1/check/terraform"
-DOWNLOAD_URL="https://releases.hashicorp.com/terraform"
-USAGE="Usage: tf_switch {version you'd like to use}: eg. 'tf_switch 0.14.11'\n You can specify 'latest' to get the latest version\n You can specify 'list' to get a list of versions available\n"
-TF_VERSION="${1}"
-TF_PATH="$(command -v terraform | cut -d\/ -f1-4)"
+CURL=$(command -v curl)
+JQ=$(command -v jq)
 KERNEL=$(uname -s | tr "[:upper:]" "[:lower:]")
-VERSION="0.0.12"
+NUM_RELEASES=${2:-25}
 TEMP_DIR=$(mktemp -d)
+TF_PATH="$(command -v terraform | cut -d\/ -f1-4)"
+TF_VERSION="${1}"
+UNZIP=$(command -v unzip)
+USAGE="Usage: tf_switch {version you'd like to use}: eg. 'tf_switch 0.14.11'\n Or you can specify 'latest' to get the latest version\n If you are unsure what versions are available, you can use 'list {number}' to get a list of terraform releases (defaults to 25)"
+
+if [ -z ${CURL} ]; then
+  printf "curl is not installed or is not in your PATH.  Please rectify the error.\n"
+  exit 1
+fi
 
 if [ -z ${JQ} ] && [ ${TF_VERSION} = "latest" ]; then
   printf "jq is not installed or is not in your PATH.  Please rectify the error.\n"
   exit 1
 fi
 
-if [ -z ${CURL} ]; then
-  printf "curl is not installed or is not in your PATH.  Please rectify the error.\n"
+if [ -z "${UNZIP}" ]; then
+  printf "unzip is not installed or is not in your PATH. Please rectify the error.\n"
   exit 1
 fi
-#
-if [ -z ${TF_VERSION} ]; then
+
+if [ -z "${TF_VERSION}" ]; then
   printf "${USAGE}"
   exit 0 # Not an error to ask for help
 fi
 
-if [ "${TF_VERSION}" = "latest" ]; then
-  VERSION="$(curl -sL {$CHECK_URL} | jq -r .current_version)"
+if [ $TF_VERSION = "list" ]; then
+  printf "Last $NUM_RELEASES releases of terraform:\n"
+  curl -s https://releases.hashicorp.com/terraform  | grep -Eo '/[.0-9]+/' | grep -Eo '[.0-9]+' | sort -rV | head -n $NUM_RELEASES
+  exit 0
+fi
+
+if [ "${TF_VERSION}" = "latest" ];
+  then
+    VERSION="$(curl -sL {$CHECK_URL} | jq -r .current_version)"
 else
   VERSION="${TF_VERSION}"
 fi
 
-if [ "$TF_VERSION" = "list" ]; then
-  VERSIONS="$(curl -LSs {$DOWNLOAD_URL} | grep -Eo '/[.0-9]+/' | grep -Eo '[.0-9]+' | sort -V)"
-  printf "$VERSIONS\n"
-  exit 0 #Not an error to list versions
-fi
-
 if [ -z ${TF_PATH} ]; then
-  echo "Terraform not found in ${PATH} !"
-  echo "Please enter FULL path to install terraform"
+  echo "Terraform path not found!"
+  echo "Please enter FULL path to install terraform (eg: /home/user/bin)"
+  echo "You MUST have permissions to the path provided and it MUST exist"
+  echo "Your current PATH is: $PATH"
   read TF_PATH
 fi
 
-TARGET_URL="${DOWNLOAD_URL}/${VERSION}/terraform_${VERSION}_${KERNEL}_amd64.zip"
-#
-echo "Downloading and switching to TF v${VERSION}"
-echo "Please wait"
+TARGET_URL="${BASE_URL}/${VERSION}/terraform_${VERSION}_${KERNEL}_amd64.zip"
+TARGET_DL="terraform_${VERSION}_${KERNEL}_amd64.zip"
+
+echo "Switching to TF v${VERSION}"
 cd $TEMP_DIR
-curl -s "${TARGET_URL}" -o "terraform_${VERSION}_${KERNEL}_amd64.zip"
-unzip -o "terraform_${VERSION}_${KERNEL}_amd64.zip"
+
+if [ ! -f "${TARGET_DL}" ]; then
+    curl -s "${TARGET_URL}" -o "${TARGET_DL}"
+fi
+
+unzip -qo "${TARGET_DL}" 2> /dev/null
+if [ $? != 0 ]; then
+  echo "$VERSION is not a valid version of terraform"
+  exit 1
+fi
+
 mv terraform "${TF_PATH}"
 
 echo "You are now using"
