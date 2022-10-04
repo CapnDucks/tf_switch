@@ -22,7 +22,7 @@ if [ -z ${CURL} ]; then
   exit 1
 fi
 
-if [ -z $CURRENT_VERSION ]; then
+if [ -z "$CURRENT_VERSION" ]; then
   CURRENT_VERSION="no current version installed!"
 fi
 
