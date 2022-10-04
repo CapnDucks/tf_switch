@@ -8,11 +8,11 @@ JQ="$(command -v jq)"
 CURL="$(command -v curl)"
 CHECK_URL="https://checkpoint-api.hashicorp.com/v1/check/terraform"
 DOWNLOAD_URL="https://releases.hashicorp.com/terraform"
-USAGE="Usage: tf_switch {version you'd like to use}: eg. 'tf_switch 0.14.11'\n Or you can specify 'latest' to get the latest version\n"
+USAGE="Usage: tf_switch {version you'd like to use}: eg. 'tf_switch 0.14.11'\n You can specify 'latest' to get the latest version\n You can specify 'list' to get a list of versions available\n"
 TF_VERSION="${1}"
 TF_PATH="$(command -v terraform | cut -d\/ -f1-4)"
 KERNEL=$(uname -s | tr "[:upper:]" "[:lower:]")
-VERSION="0.0.11"
+VERSION="0.0.12"
 TEMP_DIR=$(mktemp -d)
 
 if [ -z ${JQ} ] && [ ${TF_VERSION} = "latest" ]; then
@@ -30,11 +30,16 @@ if [ -z ${TF_VERSION} ]; then
   exit 0 # Not an error to ask for help
 fi
 
-if [ "${TF_VERSION}" = "latest" ];
-  then
-    VERSION="$(curl -sL {$CHECK_URL} | jq -r .current_version)"
+if [ "${TF_VERSION}" = "latest" ]; then
+  VERSION="$(curl -sL {$CHECK_URL} | jq -r .current_version)"
 else
   VERSION="${TF_VERSION}"
+fi
+
+if [ "$TF_VERSION" = "list" ]; then
+  VERSIONS="$(curl -LSs {$DOWNLOAD_URL} | grep -Eo '/[.0-9]+/' | grep -Eo '[.0-9]+' | sort -V)"
+  printf "$VERSIONS\n"
+  exit 0 #Not an error to list versions
 fi
 
 if [ -z ${TF_PATH} ]; then
