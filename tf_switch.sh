@@ -57,10 +57,11 @@ fi
 
 if [ -z ${TF_PATH} ]; then
   echo "Terraform path not found!"
-  echo "Please enter FULL path to install terraform (eg: /home/user/bin)"
-  echo "You MUST have permissions to the path provided and it MUST exist"
+  echo "Please enter FULL path to install terraform (eg: $HOME/bin)"
+  echo "You MUST have permissions to the path provided"
   echo "Your current PATH is: $PATH"
   read TF_PATH
+  mkdir -p $TF_PATH
 fi
 
 TARGET_URL="${BASE_URL}/${VERSION}/terraform_${VERSION}_${KERNEL}_amd64.zip"
